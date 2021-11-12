@@ -120,7 +120,7 @@ object BitPat {
   * }}}
   */
 sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends BitSet with SourceInfoDoc {
-  override val terms = Set(this)
+  def terms = Set(this)
 
   /**
     * Get specified width of said BitPat
