@@ -6,8 +6,8 @@ import scala.language.experimental.macros
 import chisel3._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
-
 object BitPat {
+
   /** Parses a bit pattern string into (bits, mask, width).
     *
     * @return bits the literal value, with don't cares being 0
@@ -27,7 +27,7 @@ object BitPat {
     var mask = BigInt(0)
     var count = 0
     for (d <- x.tail) {
-      if (! (d == '_' || d.isWhitespace)) {
+      if (!(d == '_' || d.isWhitespace)) {
         require("01?".contains(d), "Literal: " + x + " contains illegal character: " + d)
         mask = (mask << 1) + (if (d == '?') 0 else 1)
         bits = (bits << 1) + (if (d == '1') 1 else 0)
@@ -98,15 +98,14 @@ object BitPat {
 
     import scala.language.experimental.macros
 
-    final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-    final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+    final def ===(that: BitPat): Bool = macro SourceInfoTransform.thatArg
+    final def =/=(that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
     /** @group SourceInfoTransformMacro */
-    def do_=== (that: BitPat)
-               (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
+    def do_===(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
+
     /** @group SourceInfoTransformMacro */
-    def do_=/= (that: BitPat)
-               (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
+    def do_=/=(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
   }
 }
 
@@ -121,11 +120,11 @@ object BitPat {
   */
 sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc {
   def getWidth: Int = width
-  def apply(x: Int): BitPat = macro SourceInfoTransform.xArg
-  def apply(x: Int, y: Int): BitPat = macro SourceInfoTransform.xyArg
-  def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
-  def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
-  def ## (that: BitPat): BitPat = macro SourceInfoTransform.thatArg
+  def apply(x:  Int): BitPat = macro SourceInfoTransform.xArg
+  def apply(x:  Int, y: Int): BitPat = macro SourceInfoTransform.xyArg
+  def ===(that: UInt):   Bool = macro SourceInfoTransform.thatArg
+  def =/=(that: UInt):   Bool = macro SourceInfoTransform.thatArg
+  def ##(that:  BitPat): BitPat = macro SourceInfoTransform.thatArg
   override def equals(obj: Any): Boolean = {
     obj match {
       case y: BitPat => value == y.value && mask == y.mask && getWidth == y.getWidth
@@ -146,28 +145,30 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
   }
 
   /** @group SourceInfoTransformMacro */
-  def do_=== (that: UInt)
-      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  def do_===(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     value.asUInt === (that & mask.asUInt)
   }
+
   /** @group SourceInfoTransformMacro */
-  def do_=/= (that: UInt)
-      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  def do_=/=(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     !(this === that)
   }
+
   /** @group SourceInfoTransformMacro */
   def do_##(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
     new BitPat((value << that.getWidth) + that.value, (mask << that.getWidth) + that.mask, this.width + that.getWidth)
   }
 
   /** Generate raw string of a BitPat. */
-  def rawString: String = Seq.tabulate(width) { i =>
+  def rawString: String = Seq
+    .tabulate(width) { i =>
       (value.testBit(width - i - 1), mask.testBit(width - i - 1)) match {
-      case (true, true) => "1"
-      case (false, true) => "0"
-      case (_, false) => "?"
+        case (true, true)  => "1"
+        case (false, true) => "0"
+        case (_, false)    => "?"
+      }
     }
-  }.mkString
+    .mkString
 
   override def toString = s"BitPat($rawString)"
 }

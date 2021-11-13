@@ -8,7 +8,6 @@ import scala.reflect.runtime.universe.WeakTypeTag
 
 import annotation.implicitNotFound
 
-
 /** Mapping between a target type `T` and a view type `V`
   *
   * Enables calling `.viewAs[T]` on instances of the target type.
@@ -38,9 +37,11 @@ import annotation.implicitNotFound
   * @see [[DataView$ object DataView]] for factory methods
   * @see [[PartialDataView object PartialDataView]] for defining non-total `DataViews`
   */
-@implicitNotFound("Could not find implicit value for DataView[${T}, ${V}].\n" +
-  "Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview")
-sealed class DataView[T : DataProduct, V <: Data] private[chisel3] (
+@implicitNotFound(
+  "Could not find implicit value for DataView[${T}, ${V}].\n" +
+    "Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview"
+)
+sealed class DataView[T: DataProduct, V <: Data] private[chisel3] (
   /** Function constructing an object of the View type from an object of the Target type */
   private[chisel3] val mkView: T => V,
   /** Function that returns corresponding fields of the target and view */
@@ -48,8 +49,8 @@ sealed class DataView[T : DataProduct, V <: Data] private[chisel3] (
   // Aliasing this with a def below to make the ScalaDoc show up for the field
   _total: Boolean
 )(
-  implicit private[chisel3] val sourceInfo: SourceInfo
-) {
+  implicit private[chisel3] val sourceInfo: SourceInfo) {
+
   /** Indicates if the mapping contains every field of the target */
   def total: Boolean = _total
 
@@ -86,15 +87,30 @@ sealed class DataView[T : DataProduct, V <: Data] private[chisel3] (
 object DataView {
 
   /** Default factory method, alias for [[pairs]] */
-  def apply[T : DataProduct, V <: Data](mkView: T => V, pairs: ((T, V) => (Data, Data))*)(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def apply[T: DataProduct, V <: Data](
+    mkView: T => V,
+    pairs:  ((T, V) => (Data, Data))*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     DataView.pairs(mkView, pairs: _*)
 
   /** Construct [[DataView]]s with pairs of functions from the target and view to corresponding fields */
-  def pairs[T : DataProduct, V <: Data](mkView: T => V, pairs: ((T, V) => (Data, Data))*)(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def pairs[T: DataProduct, V <: Data](
+    mkView: T => V,
+    pairs:  ((T, V) => (Data, Data))*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     mapping(mkView: T => V, swizzle(pairs))
 
   /** More general factory method for complex mappings */
-  def mapping[T : DataProduct, V <: Data](mkView: T => V, mapping: (T, V) => Iterable[(Data, Data)])(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def mapping[T: DataProduct, V <: Data](
+    mkView:  T => V,
+    mapping: (T, V) => Iterable[(Data, Data)]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     new DataView[T, V](mkView, mapping, _total = true)
 
   /** Provides `invert` for invertible [[DataView]]s
@@ -104,7 +120,7 @@ object DataView {
     *
     * @note [[PartialDataView]]s are **not** invertible and will result in an elaboration time exception
     */
-  implicit class InvertibleDataView[T <: Data : WeakTypeTag, V <: Data : WeakTypeTag](view: DataView[T, V]) {
+  implicit class InvertibleDataView[T <: Data: WeakTypeTag, V <: Data: WeakTypeTag](view: DataView[T, V]) {
     def invert(mkView: V => T): DataView[V, T] = {
       // It would've been nice to make this a compiler error, but it's unclear how to make that work.
       // We tried having separate TotalDataView and PartialDataView and only defining inversion for
@@ -141,14 +157,29 @@ object DataView {
 object PartialDataView {
 
   /** Default factory method, alias for [[pairs]] */
-  def apply[T: DataProduct, V <: Data](mkView: T => V, pairs: ((T, V) => (Data, Data))*)(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def apply[T: DataProduct, V <: Data](
+    mkView: T => V,
+    pairs:  ((T, V) => (Data, Data))*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     PartialDataView.pairs(mkView, pairs: _*)
 
   /** Construct [[DataView]]s with pairs of functions from the target and view to corresponding fields */
-  def pairs[T: DataProduct, V <: Data](mkView: T => V, pairs: ((T, V) => (Data, Data))*)(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def pairs[T: DataProduct, V <: Data](
+    mkView: T => V,
+    pairs:  ((T, V) => (Data, Data))*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     mapping(mkView, DataView.swizzle(pairs))
 
   /** More general factory method for complex mappings */
-  def mapping[T: DataProduct, V <: Data](mkView: T => V, mapping: (T, V) => Iterable[(Data, Data)])(implicit sourceInfo: SourceInfo): DataView[T, V] =
+  def mapping[T: DataProduct, V <: Data](
+    mkView:  T => V,
+    mapping: (T, V) => Iterable[(Data, Data)]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): DataView[T, V] =
     new DataView[T, V](mkView, mapping, _total = false)
 }

@@ -14,7 +14,6 @@ import _root_.firrtl.annotations.Annotation
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 
-
 case class PrimOp(name: String) {
   override def toString: String = name
 }
@@ -67,22 +66,22 @@ object PrimOp {
 abstract class Arg {
   def localName: String = name
   def contextualName(ctx: Component): String = name
-  def fullName(ctx: Component): String = contextualName(ctx)
+  def fullName(ctx:       Component): String = contextualName(ctx)
   def name: String
 }
 
 case class Node(id: HasId) extends Arg {
   override def contextualName(ctx: Component): String = id.getOptionRef match {
     case Some(arg) => arg.contextualName(ctx)
-    case None => id.instanceName
+    case None      => id.instanceName
   }
   override def localName: String = id.getOptionRef match {
     case Some(arg) => arg.localName
-    case None => id.instanceName
+    case None      => id.instanceName
   }
   def name: String = id.getOptionRef match {
     case Some(arg) => arg.name
-    case None => id.instanceName
+    case None      => id.instanceName
   }
 }
 
@@ -107,8 +106,10 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
 
   protected def minWidth: Int
   if (forcedWidth) {
-    require(widthArg.get >= minWidth,
-      s"The literal value ${num} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
+    require(
+      widthArg.get >= minWidth,
+      s"The literal value ${num} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required."
+    )
   }
 }
 
@@ -117,8 +118,8 @@ case class ILit(n: BigInt) extends Arg {
 }
 
 case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
-  def name: String = "UInt" + width + "(\"h0" + num.toString(16) + "\")"
-  def minWidth: Int = 1 max n.bitLength
+  def name:     String = "UInt" + width + "(\"h0" + num.toString(16) + "\")"
+  def minWidth: Int = 1.max(n.bitLength)
 
   def cloneWithWidth(newWidth: Width): this.type = {
     ULit(n, newWidth).asInstanceOf[this.type]
@@ -157,8 +158,11 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
     s"asInterval(${ULit(unsigned, width).name}, ${n}, ${n}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
   val range: IntervalRange = {
-    new IntervalRange(IntervalRange.getBound(isClosed = true, BigDecimal(n)),
-      IntervalRange.getBound(isClosed = true, BigDecimal(n)), IntervalRange.getRangeWidth(binaryPoint))
+    new IntervalRange(
+      IntervalRange.getBound(isClosed = true, BigDecimal(n)),
+      IntervalRange.getBound(isClosed = true, BigDecimal(n)),
+      IntervalRange.getRangeWidth(binaryPoint)
+    )
   }
   def minWidth: Int = 1 + n.bitLength
 
@@ -168,6 +172,7 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
 }
 
 case class Ref(name: String) extends Arg
+
 /** Arg for ports of Modules
   * @param mod the module this port belongs to
   * @param name the name of the port
@@ -176,6 +181,7 @@ case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   override def contextualName(ctx: Component): String =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
+
 /** Ports of cloned modules (CloneModuleAsRecord)
   * @param mod The original module for which these ports are a clone
   * @param name the name of the module instance
@@ -209,22 +215,22 @@ object Width {
 
 sealed abstract class Width {
   type W = Int
-  def min(that: Width): Width = this.op(that, _ min _)
-  def max(that: Width): Width = this.op(that, _ max _)
-  def + (that: Width): Width = this.op(that, _ + _)
-  def + (that: Int): Width = this.op(this, (a, b) => a + that)
-  def shiftRight(that: Int): Width = this.op(this, (a, b) => 0 max (a - that))
+  def min(that:              Width): Width = this.op(that, _ min _)
+  def max(that:              Width): Width = this.op(that, _ max _)
+  def +(that:                Width): Width = this.op(that, _ + _)
+  def +(that:                Int):   Width = this.op(this, (a, b) => a + that)
+  def shiftRight(that:       Int): Width = this.op(this, (a, b) => 0.max(a - that))
   def dynamicShiftLeft(that: Width): Width =
     this.op(that, (a, b) => a + (1 << b) - 1)
 
   def known: Boolean
-  def get: W
+  def get:   W
   protected def op(that: Width, f: (W, W) => W): Width
 }
 
 sealed case class UnknownWidth() extends Width {
   def known: Boolean = false
-  def get: Int = None.get
+  def get:   Int = None.get
   def op(that: Width, f: (W, W) => W): Width = this
   override def toString: String = ""
 }
@@ -232,10 +238,10 @@ sealed case class UnknownWidth() extends Width {
 sealed case class KnownWidth(value: Int) extends Width {
   require(value >= 0)
   def known: Boolean = true
-  def get: Int = value
+  def get:   Int = value
   def op(that: Width, f: (W, W) => W): Width = that match {
     case KnownWidth(x) => KnownWidth(f(value, x))
-    case _ => that
+    case _             => that
   }
   override def toString: String = s"<${value.toString}>"
 }
@@ -247,35 +253,34 @@ object BinaryPoint {
 
 sealed abstract class BinaryPoint {
   type W = Int
-  def max(that: BinaryPoint): BinaryPoint = this.op(that, _ max _)
-  def + (that: BinaryPoint): BinaryPoint = this.op(that, _ + _)
-  def + (that: Int): BinaryPoint = this.op(this, (a, b) => a + that)
-  def shiftRight(that: Int): BinaryPoint = this.op(this, (a, b) => 0 max (a - that))
+  def max(that:              BinaryPoint): BinaryPoint = this.op(that, _ max _)
+  def +(that:                BinaryPoint): BinaryPoint = this.op(that, _ + _)
+  def +(that:                Int):         BinaryPoint = this.op(this, (a, b) => a + that)
+  def shiftRight(that:       Int): BinaryPoint = this.op(this, (a, b) => 0.max(a - that))
   def dynamicShiftLeft(that: BinaryPoint): BinaryPoint =
     this.op(that, (a, b) => a + (1 << b) - 1)
 
   def known: Boolean
-  def get: W
+  def get:   W
   protected def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint
 }
 
 case object UnknownBinaryPoint extends BinaryPoint {
   def known: Boolean = false
-  def get: Int = None.get
+  def get:   Int = None.get
   def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint = this
   override def toString: String = ""
 }
 
 sealed case class KnownBinaryPoint(value: Int) extends BinaryPoint {
   def known: Boolean = true
-  def get: Int = value
+  def get:   Int = value
   def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint = that match {
     case KnownBinaryPoint(x) => KnownBinaryPoint(f(value, x))
-    case _ => that
+    case _                   => that
   }
   override def toString: String = s"<<${value.toString}>>"
 }
-
 
 sealed abstract class MemPortDirection(name: String) {
   override def toString: String = name
@@ -290,17 +295,18 @@ object MemPortDirection {
 sealed trait RangeType {
   def getWidth: Width
 
-  def * (that: IntervalRange): IntervalRange
-  def +& (that: IntervalRange): IntervalRange
-  def -& (that: IntervalRange): IntervalRange
-  def << (that: Int): IntervalRange
-  def >> (that: Int): IntervalRange
-  def << (that: KnownWidth): IntervalRange
-  def >> (that: KnownWidth): IntervalRange
+  def *(that:     IntervalRange): IntervalRange
+  def +&(that:    IntervalRange): IntervalRange
+  def -&(that:    IntervalRange): IntervalRange
+  def <<(that:    Int):           IntervalRange
+  def >>(that:    Int):           IntervalRange
+  def <<(that:    KnownWidth):    IntervalRange
+  def >>(that:    KnownWidth):    IntervalRange
   def merge(that: IntervalRange): IntervalRange
 }
 
 object IntervalRange {
+
   /** Creates an IntervalRange, this is used primarily by the range interpolator macro
     * @param lower               lower bound
     * @param upper               upper bound
@@ -337,7 +343,9 @@ object IntervalRange {
       case KnownWidth(w) =>
         val nearestPowerOf2 = BigInt("1" + ("0" * (w - 1)), 2)
         IntervalRange(
-          firrtlir.Closed(BigDecimal(-nearestPowerOf2)), firrtlir.Closed(BigDecimal(nearestPowerOf2 - 1)), binaryPoint
+          firrtlir.Closed(BigDecimal(-nearestPowerOf2)),
+          firrtlir.Closed(BigDecimal(nearestPowerOf2 - 1)),
+          binaryPoint
         )
       case _ =>
         IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, binaryPoint)
@@ -350,22 +358,19 @@ object IntervalRange {
   }
 
   def getBound(isClosed: Boolean, value: String): firrtlir.Bound = {
-    if(value == "?") {
+    if (value == "?") {
       firrtlir.UnknownBound
-    }
-    else if(isClosed) {
+    } else if (isClosed) {
       firrtlir.Closed(BigDecimal(value))
-    }
-    else {
+    } else {
       firrtlir.Open(BigDecimal(value))
     }
   }
 
   def getBound(isClosed: Boolean, value: BigDecimal): firrtlir.Bound = {
-    if(isClosed) {
+    if (isClosed) {
       firrtlir.Closed(value)
-    }
-    else {
+    } else {
       firrtlir.Open(value)
     }
   }
@@ -379,33 +384,30 @@ object IntervalRange {
   }
 
   def getBinaryPoint(n: Int): firrtlir.Width = {
-    if(n < 0) {
+    if (n < 0) {
       firrtlir.UnknownWidth
-    }
-    else {
+    } else {
       firrtlir.IntWidth(n)
     }
   }
   def getBinaryPoint(n: BinaryPoint): firrtlir.Width = {
     n match {
-      case UnknownBinaryPoint => firrtlir.UnknownWidth
+      case UnknownBinaryPoint  => firrtlir.UnknownWidth
       case KnownBinaryPoint(w) => firrtlir.IntWidth(w)
     }
   }
 
   def getRangeWidth(w: Width): firrtlir.Width = {
-    if(w.known) {
+    if (w.known) {
       firrtlir.IntWidth(w.get)
-    }
-    else {
+    } else {
       firrtlir.UnknownWidth
     }
   }
   def getRangeWidth(binaryPoint: BinaryPoint): firrtlir.Width = {
-    if(binaryPoint.known) {
+    if (binaryPoint.known) {
       firrtlir.IntWidth(binaryPoint.get)
-    }
-    else {
+    } else {
       firrtlir.UnknownWidth
     }
   }
@@ -413,47 +415,46 @@ object IntervalRange {
   def Unknown: IntervalRange = range"[?,?].?"
 }
 
-
 sealed class IntervalRange(
-                            val lowerBound: firrtlir.Bound,
-                            val upperBound: firrtlir.Bound,
-                            private[chisel3] val firrtlBinaryPoint: firrtlir.Width)
-  extends firrtlir.IntervalType(lowerBound, upperBound, firrtlBinaryPoint)
+  val lowerBound:                         firrtlir.Bound,
+  val upperBound:                         firrtlir.Bound,
+  private[chisel3] val firrtlBinaryPoint: firrtlir.Width)
+    extends firrtlir.IntervalType(lowerBound, upperBound, firrtlBinaryPoint)
     with RangeType {
 
   (lowerBound, upperBound) match {
     case (firrtlir.Open(begin), firrtlir.Open(end)) =>
-      if(begin >= end) throw new ChiselException(s"Invalid range with ${serialize}")
+      if (begin >= end) throw new ChiselException(s"Invalid range with ${serialize}")
       binaryPoint match {
         case KnownBinaryPoint(bp) =>
-          if(begin >= end - (BigDecimal(1) / BigDecimal(BigInt(1) << bp))) {
+          if (begin >= end - (BigDecimal(1) / BigDecimal(BigInt(1) << bp))) {
             throw new ChiselException(s"Invalid range with ${serialize}")
           }
         case _ =>
       }
     case (firrtlir.Open(begin), firrtlir.Closed(end)) =>
-      if(begin >= end) throw new ChiselException(s"Invalid range with ${serialize}")
+      if (begin >= end) throw new ChiselException(s"Invalid range with ${serialize}")
     case (firrtlir.Closed(begin), firrtlir.Open(end)) =>
-      if(begin >= end) throw new ChiselException(s"Invalid range with ${serialize}")
+      if (begin >= end) throw new ChiselException(s"Invalid range with ${serialize}")
     case (firrtlir.Closed(begin), firrtlir.Closed(end)) =>
-      if(begin > end) throw new ChiselException(s"Invalid range with ${serialize}")
+      if (begin > end) throw new ChiselException(s"Invalid range with ${serialize}")
     case _ =>
   }
 
   override def toString: String = {
     val binaryPoint = firrtlBinaryPoint match {
       case firrtlir.IntWidth(n) => s"$n"
-      case _ => "?"
+      case _                    => "?"
     }
     val lowerBoundString = lowerBound match {
-      case firrtlir.Closed(l)      => s"[$l"
-      case firrtlir.Open(l)        => s"($l"
-      case firrtlir.UnknownBound   => s"[?"
+      case firrtlir.Closed(l)    => s"[$l"
+      case firrtlir.Open(l)      => s"($l"
+      case firrtlir.UnknownBound => s"[?"
     }
     val upperBoundString = upperBound match {
-      case firrtlir.Closed(l)      => s"$l]"
-      case firrtlir.Open(l)        => s"$l)"
-      case firrtlir.UnknownBound   => s"?]"
+      case firrtlir.Closed(l)    => s"$l]"
+      case firrtlir.Open(l)      => s"$l)"
+      case firrtlir.UnknownBound => s"?]"
     }
     s"""range"$lowerBoundString,$upperBoundString.$binaryPoint""""
   }
@@ -472,8 +473,8 @@ sealed class IntervalRange(
       case Some(inc) =>
         lower match {
           case firrtlir.Closed(n) => Some(n)
-          case firrtlir.Open(n) => Some(n + inc)
-          case _ => None
+          case firrtlir.Open(n)   => Some(n + inc)
+          case _                  => None
         }
       case _ =>
         None
@@ -488,8 +489,8 @@ sealed class IntervalRange(
       case Some(inc) =>
         upper match {
           case firrtlir.Closed(n) => Some(n)
-          case firrtlir.Open(n) => Some(n - inc)
-          case _ => None
+          case firrtlir.Open(n)   => Some(n - inc)
+          case _                  => None
         }
       case _ =>
         None
@@ -513,16 +514,18 @@ sealed class IntervalRange(
 
   override def getWidth: Width = {
     width match {
-      case firrtlir.IntWidth(n) => KnownWidth(n.toInt)
+      case firrtlir.IntWidth(n)  => KnownWidth(n.toInt)
       case firrtlir.UnknownWidth => UnknownWidth()
     }
   }
 
   private def doFirrtlOp(op: firrtlir.PrimOp, that: IntervalRange): IntervalRange = {
-    PrimOps.set_primop_type(
-      firrtlir.DoPrim(op,
-        Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", that)), Nil,firrtlir.UnknownType)
-    ).tpe match {
+    PrimOps
+      .set_primop_type(
+        firrtlir
+          .DoPrim(op, Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", that)), Nil, firrtlir.UnknownType)
+      )
+      .tpe match {
       case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
       case other => sys.error("BAD!")
     }
@@ -530,24 +533,27 @@ sealed class IntervalRange(
 
   private def doFirrtlDynamicShift(that: UInt, isLeft: Boolean): IntervalRange = {
     val uinttpe = that.widthOption match {
-      case None => firrtlir.UIntType(firrtlir.UnknownWidth)
+      case None    => firrtlir.UIntType(firrtlir.UnknownWidth)
       case Some(w) => firrtlir.UIntType(firrtlir.IntWidth(w))
     }
-    val op = if(isLeft) PrimOps.Dshl else PrimOps.Dshr
-    PrimOps.set_primop_type(
-      firrtlir.DoPrim(op,
-        Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", uinttpe)), Nil,firrtlir.UnknownType)
-    ).tpe match {
+    val op = if (isLeft) PrimOps.Dshl else PrimOps.Dshr
+    PrimOps
+      .set_primop_type(
+        firrtlir
+          .DoPrim(op, Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", uinttpe)), Nil, firrtlir.UnknownType)
+      )
+      .tpe match {
       case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
       case other => sys.error("BAD!")
     }
   }
 
   private def doFirrtlOp(op: firrtlir.PrimOp, that: Int): IntervalRange = {
-    PrimOps.set_primop_type(
-      firrtlir.DoPrim(op,
-        Seq(firrtlir.Reference("a", this)), Seq(BigInt(that)), firrtlir.UnknownType)
-    ).tpe match {
+    PrimOps
+      .set_primop_type(
+        firrtlir.DoPrim(op, Seq(firrtlir.Reference("a", this)), Seq(BigInt(that)), firrtlir.UnknownType)
+      )
+      .tpe match {
       case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
       case other => sys.error("BAD!")
     }
@@ -581,7 +587,7 @@ sealed class IntervalRange(
   }
 
   private def adjustBoundValue(value: BigDecimal, binaryPointValue: Int): BigDecimal = {
-    if(binaryPointValue >= 0) {
+    if (binaryPointValue >= 0) {
       val maskFactor = BigDecimal(1 << binaryPointValue)
       val a = (value * maskFactor)
       val b = a.setScale(0, RoundingMode.DOWN)
@@ -596,9 +602,9 @@ sealed class IntervalRange(
     binaryPoint match {
       case KnownBinaryPoint(binaryPointValue) =>
         bound match {
-          case firrtlir.Open(value) => firrtlir.Open(adjustBoundValue(value, binaryPointValue))
+          case firrtlir.Open(value)   => firrtlir.Open(adjustBoundValue(value, binaryPointValue))
           case firrtlir.Closed(value) => firrtlir.Closed(adjustBoundValue(value, binaryPointValue))
-          case _ => bound
+          case _                      => bound
         }
       case _ => firrtlir.UnknownBound
     }
@@ -731,19 +737,22 @@ sealed class IntervalRange(
   override def merge(that: IntervalRange): IntervalRange = {
     val lowest = (this.getLowestPossibleValue, that.getLowestPossibleValue) match {
       case (Some(l1), Some(l2)) =>
-        if(l1 < l2) { this.lower } else { that.lower }
+        if (l1 < l2) { this.lower }
+        else { that.lower }
       case _ =>
         firrtlir.UnknownBound
     }
     val highest = (this.getHighestPossibleValue, that.getHighestPossibleValue) match {
       case (Some(l1), Some(l2)) =>
-        if(l1 >= l2) { this.lower } else { that.lower }
+        if (l1 >= l2) { this.lower }
+        else { that.lower }
       case _ =>
         firrtlir.UnknownBound
     }
     val newBinaryPoint = (this.firrtlBinaryPoint, that.firrtlBinaryPoint) match {
       case (firrtlir.IntWidth(b1), firrtlir.IntWidth(b2)) =>
-        if(b1 > b2) { firrtlir.IntWidth(b1)} else { firrtlir.IntWidth(b2) }
+        if (b1 > b2) { firrtlir.IntWidth(b1) }
+        else { firrtlir.IntWidth(b2) }
       case _ =>
         firrtlir.UnknownWidth
     }
@@ -773,8 +782,21 @@ case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
 case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition
 case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition
 case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
-case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt, readUnderWrite: fir.ReadUnderWrite.Value) extends Definition
-case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
+case class DefSeqMemory(
+  sourceInfo:     SourceInfo,
+  id:             HasId,
+  t:              Data,
+  size:           BigInt,
+  readUnderWrite: fir.ReadUnderWrite.Value)
+    extends Definition
+case class DefMemPort[T <: Data](
+  sourceInfo: SourceInfo,
+  id:         T,
+  source:     Node,
+  dir:        MemPortDirection,
+  index:      Arg,
+  clock:      Arg)
+    extends Definition
 case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
 case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
 case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
@@ -792,15 +814,27 @@ object Formal extends Enumeration {
   val Assume = Value("assume")
   val Cover = Value("cover")
 }
-case class Verification[T <: VerificationStatement](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
-                        predicate: Arg, message: String) extends Definition
+case class Verification[T <: VerificationStatement](
+  id:         T,
+  op:         Formal.Value,
+  sourceInfo: SourceInfo,
+  clock:      Arg,
+  predicate:  Arg,
+  message:    String)
+    extends Definition
 abstract class Component extends Arg {
-  def id: BaseModule
-  def name: String
+  def id:    BaseModule
+  def name:  String
   def ports: Seq[Port]
 }
 case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
-case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
+case class DefBlackBox(
+  id:     BaseBlackBox,
+  name:   String,
+  ports:  Seq[Port],
+  topDir: SpecifiedDirection,
+  params: Map[String, Param])
+    extends Component
 
 case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap) {
   def firrtlAnnotations: Iterable[Annotation] = annotations.flatMap(_.toFirrtl.update(renames))

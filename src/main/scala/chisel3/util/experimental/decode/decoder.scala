@@ -3,13 +3,14 @@
 package chisel3.util.experimental.decode
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, annotate}
-import chisel3.util.{BitPat, pla}
+import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.util.{pla, BitPat}
 import chisel3.util.experimental.getAnnotations
 import firrtl.annotations.Annotation
 import logger.LazyLogging
 
 object decoder extends LazyLogging {
+
   /** Use a specific [[Minimizer]] to generated decoded signals.
     *
     * @param minimizer  specific [[Minimizer]], can be [[QMCMinimizer]] or [[EspressoMinimizer]].
@@ -71,7 +72,8 @@ object decoder extends LazyLogging {
       qmc(input, truthTable)
     }
 
-    try espresso(input, truthTable) catch {
+    try espresso(input, truthTable)
+    catch {
       case EspressoNotFoundException =>
         logger.error(s"espresso is not found in your PATH:\n${sys.env("PATH").split(":").mkString("\n")}".stripMargin)
         qmcFallBack(input, truthTable)

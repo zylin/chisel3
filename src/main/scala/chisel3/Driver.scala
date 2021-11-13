@@ -14,7 +14,6 @@ import chisel3.stage.{ChiselExecutionResultView, ChiselGeneratorAnnotation, Chis
 import chisel3.stage.phases.DriverCompatibility
 import java.io._
 
-
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
   * By default firrtl is automatically run after chisel.  an [[ExecutionOptionsManager]]
@@ -39,6 +38,7 @@ import java.io._
   */
 
 trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
+
   /** Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM
     *
     * @param prefix basename of the file
@@ -65,17 +65,16 @@ trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
 trait ChiselExecutionResult
 
 /**
-  *
   * @param circuitOption  Optional circuit, has information like circuit name
   * @param emitted            The emitted Chirrrl text
   * @param firrtlResultOption Optional Firrtl result, @see freechipsproject/firrtl for details
   */
 @deprecated("This will be removed in Chisel 3.5", "Chisel 3.4")
 case class ChiselExecutionSuccess(
-                                  circuitOption: Option[Circuit],
-                                  emitted: String,
-                                  firrtlResultOption: Option[FirrtlExecutionResult]
-                                  ) extends ChiselExecutionResult
+  circuitOption:      Option[Circuit],
+  emitted:            String,
+  firrtlResultOption: Option[FirrtlExecutionResult])
+    extends ChiselExecutionResult
 
 /**
   * Getting one of these indicates failure of some sort.

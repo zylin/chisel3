@@ -9,7 +9,7 @@ import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 
 import chisel3.HasChiselExecutionOptions
-import chisel3.stage.{ChiselStage, NoRunFirrtlCompilerAnnotation, ChiselOutputFileAnnotation}
+import chisel3.stage.{ChiselOutputFileAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
 
 /** This provides components of a compatibility wrapper around Chisel's deprecated [[chisel3.Driver]].
   *

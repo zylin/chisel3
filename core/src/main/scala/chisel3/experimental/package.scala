@@ -15,9 +15,9 @@ package object experimental {
   import chisel3.internal.BaseModule
 
   // Implicit conversions for BlackBox Parameters
-  implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
-  implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
-  implicit def fromBigIntToIntParam(x: BigInt): IntParam = IntParam(x)
+  implicit def fromIntToIntParam(x:       Int):    IntParam = IntParam(BigInt(x))
+  implicit def fromLongToIntParam(x:      Long):   IntParam = IntParam(BigInt(x))
+  implicit def fromBigIntToIntParam(x:    BigInt): IntParam = IntParam(x)
   implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
   implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
@@ -31,6 +31,7 @@ package object experimental {
   type ClonePorts = BaseModule.ClonePorts
 
   object CloneModuleAsRecord {
+
     /** Clones an existing module and returns a record of all its top-level ports.
       * Each element of the record is named with a string matching the
       * corresponding port's name and shares the port's type.
@@ -40,13 +41,18 @@ package object experimental {
       * q2_io.enq <> q1.io.deq
       * }}}
       */
-    def apply(proto: BaseModule)(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): ClonePorts = {
+    def apply(
+      proto: BaseModule
+    )(
+      implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo,
+      compileOptions:      CompileOptions
+    ): ClonePorts = {
       BaseModule.cloneIORecord(proto)
     }
   }
 
   val requireIsHardware = chisel3.internal.requireIsHardware
-  val requireIsChiselType =  chisel3.internal.requireIsChiselType
+  val requireIsChiselType = chisel3.internal.requireIsChiselType
   type Direction = ActualDirection
   val Direction = ActualDirection
 
@@ -67,6 +73,7 @@ package object experimental {
 
   class dump extends chisel3.internal.naming.dump
   class treedump extends chisel3.internal.naming.treedump
+
   /** Experimental macro for naming Chisel hardware values
     *
     * By default, Chisel uses reflection for naming which only works for public fields of `Bundle`
@@ -93,6 +100,7 @@ package object experimental {
     * }}}
     */
   class chiselName extends chisel3.internal.naming.chiselName
+
   /** Do not name instances of this type in [[chiselName]]
     *
     * By default, `chiselName` will include `val` names of instances of annotated classes as a
@@ -137,6 +145,7 @@ package object experimental {
     */
   object VecLiterals {
     implicit class AddVecLiteralConstructor[T <: Data](x: Vec[T]) {
+
       /** Given a generator of a list tuples of the form [Int, Data]
         * constructs a Vec literal, parallel concept to `BundleLiteral`
         *
@@ -149,15 +158,16 @@ package object experimental {
     }
 
     implicit class AddObjectLiteralConstructor(x: Vec.type) {
+
       /** This provides an literal construction method for cases using
         * object `Vec` as in `Vec.Lit(1.U, 2.U)`
         */
       def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
         require(elems.nonEmpty, s"Lit.Vec(...) must have at least one element")
-        val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element)}
+        val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element) }
         val widestElement = elems.maxBy(_.getWidth)
         val vec: Vec[T] = Vec.apply(indexElements.length, chiselTypeOf(widestElement))
-        vec.Lit(indexElements:_*)
+        vec.Lit(indexElements: _*)
       }
     }
   }

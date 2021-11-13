@@ -14,7 +14,7 @@ final class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
     def writeRow(map: (BitPat, BitPat)): String =
       s"${map._1.rawString}->${map._2.rawString}"
 
-    (table.map(writeRow) ++ Seq(s"${" "*(inputWidth + 2)}${default.rawString}")).toSeq.sorted.mkString("\n")
+    (table.map(writeRow) ++ Seq(s"${" " * (inputWidth + 2)}${default.rawString}")).toSeq.sorted.mkString("\n")
   }
 
   def copy(table: Map[BitPat, BitPat] = this.table, default: BitPat = this.default) = new TruthTable(table, default)
@@ -28,6 +28,7 @@ final class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
 }
 
 object TruthTable {
+
   /** Parse TruthTable from its string representation. */
   def apply(tableString: String): TruthTable = {
     TruthTable(
@@ -46,22 +47,29 @@ object TruthTable {
     require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
     require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
     val outputWidth = table.map(_._2.getWidth).head
-    new TruthTable(table.toSeq.groupBy(_._1.toString).map { case (key, values) =>
-      // merge same input inputs.
-      values.head._1 -> BitPat(s"b${
-        Seq.tabulate(outputWidth) { i =>
-          val outputSet = values.map(_._2)
-            .map(_.rawString)
-            .map(_ (i))
-            .toSet
-            .filterNot(_ == '?')
-          require(outputSet.size != 2, s"TruthTable conflict in :\n${values.map { case (i, o) => s"${i.rawString}->${o.rawString}" }.mkString("\n")}")
-          outputSet.headOption.getOrElse('?')
-        }.mkString
-      }")
-    }, default)
+    new TruthTable(
+      table.toSeq.groupBy(_._1.toString).map {
+        case (key, values) =>
+          // merge same input inputs.
+          values.head._1 -> BitPat(s"b${Seq
+            .tabulate(outputWidth) { i =>
+              val outputSet = values
+                .map(_._2)
+                .map(_.rawString)
+                .map(_(i))
+                .toSet
+                .filterNot(_ == '?')
+              require(
+                outputSet.size != 2,
+                s"TruthTable conflict in :\n${values.map { case (i, o) => s"${i.rawString}->${o.rawString}" }.mkString("\n")}"
+              )
+              outputSet.headOption.getOrElse('?')
+            }
+            .mkString}")
+      },
+      default
+    )
   }
-
 
   /** consume 1 table, split it into up to 3 tables with the same default bits.
     *
@@ -77,10 +85,17 @@ object TruthTable {
       BitPat(s"b${bitPat.rawString.zipWithIndex.filter(b => indexes.contains(b._2)).map(_._1).mkString}")
 
     def tableFilter(indexes: Seq[Int]): Option[(TruthTable, Seq[Int])] = {
-      if(indexes.nonEmpty) Some((TruthTable(
-        table.table.map { case (in, out) => in -> bpFilter(out, indexes) },
-        bpFilter(table.default, indexes)
-      ), indexes)) else None
+      if (indexes.nonEmpty)
+        Some(
+          (
+            TruthTable(
+              table.table.map { case (in, out) => in -> bpFilter(out, indexes) },
+              bpFilter(table.default, indexes)
+            ),
+            indexes
+          )
+        )
+      else None
     }
 
     def index(bitPat: BitPat, bpType: Char): Seq[Int] =
@@ -99,7 +114,11 @@ object TruthTable {
     tables: Seq[(TruthTable, Seq[Int])]
   ): TruthTable = {
     def reIndex(bitPat: BitPat, table: TruthTable, indexes: Seq[Int]): Seq[(Char, Int)] =
-      (table.table.map(a => a._1.toString -> a._2).getOrElse(bitPat.toString, BitPat.dontCare(indexes.size))).rawString.zip(indexes)
+      (table.table
+        .map(a => a._1.toString -> a._2)
+        .getOrElse(bitPat.toString, BitPat.dontCare(indexes.size)))
+        .rawString
+        .zip(indexes)
     def bitPat(indexedChar: Seq[(Char, Int)]) = BitPat(s"b${indexedChar
       .sortBy(_._2)
       .map(_._1)

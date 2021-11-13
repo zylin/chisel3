@@ -9,7 +9,7 @@ case object EspressoNotFoundException extends Exception
 
 object EspressoMinimizer extends Minimizer with LazyLogging {
   def minimize(table: TruthTable): TruthTable =
-    TruthTable.merge(TruthTable.split(table).map{case (table, indexes) => (espresso(table), indexes)})
+    TruthTable.merge(TruthTable.split(table).map { case (table, indexes) => (espresso(table), indexes) })
 
   def espresso(table: TruthTable): TruthTable = {
     def writeTable(table: TruthTable): String = {
@@ -24,10 +24,9 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
       }
       val tableType: String = defaultType match {
         case '?' => "fr"
-        case _ => "fd"
+        case _   => "fd"
       }
-      val rawTable = table
-        .toString
+      val rawTable = table.toString
         .split("\n")
         .filter(_.contains("->"))
         .mkString("\n")
@@ -60,11 +59,13 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
     logger.trace(s"""espresso input table:
                     |$input
                     |""".stripMargin)
-    val output = try {
-      os.proc("espresso").call(stdin = input).out.chunks.mkString
-    } catch {
-      case e: java.io.IOException if e.getMessage.contains("error=2, No such file or directory") => throw EspressoNotFoundException
-    }
+    val output =
+      try {
+        os.proc("espresso").call(stdin = input).out.chunks.mkString
+      } catch {
+        case e: java.io.IOException if e.getMessage.contains("error=2, No such file or directory") =>
+          throw EspressoNotFoundException
+      }
     logger.trace(s"""espresso output table:
                     |$output
                     |""".stripMargin)

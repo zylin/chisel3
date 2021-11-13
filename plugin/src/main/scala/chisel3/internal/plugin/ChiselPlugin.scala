@@ -34,6 +34,4 @@ class ChiselPlugin(val global: Global) extends Plugin {
     true
   }
 
-
 }
-

@@ -3,7 +3,7 @@
 package chisel3.experimental.dataview
 
 import chisel3.experimental.BaseModule
-import chisel3.{Data, getRecursiveFields}
+import chisel3.{getRecursiveFields, Data}
 
 import scala.annotation.implicitNotFound
 
@@ -18,9 +18,12 @@ import scala.annotation.implicitNotFound
   * @tparam A Type that has elements of type [[Data]]
   * @see [[https://www.chisel-lang.org/chisel3/docs/explanations/dataview#dataproduct Detailed Documentation]]
   */
-@implicitNotFound("Could not find implicit value for DataProduct[${A}].\n" +
-  "Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview#dataproduct")
+@implicitNotFound(
+  "Could not find implicit value for DataProduct[${A}].\n" +
+    "Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview#dataproduct"
+)
 trait DataProduct[-A] {
+
   /** Provides [[Data]] elements within some containing object
     *
     * @param a Containing object
@@ -46,6 +49,7 @@ trait DataProduct[-A] {
   * @note DataProduct implementations provided in this object are available in the implicit scope
   */
 object DataProduct {
+
   /** [[DataProduct]] implementation for [[Data]] */
   implicit val dataDataProduct: DataProduct[Data] = new DataProduct[Data] {
     def dataIterator(a: Data, path: String): Iterator[(Data, String)] =
